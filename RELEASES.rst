@@ -154,6 +154,13 @@ Unreleased
   changes are persisted via ``PATCH /api/run-meta`` with optimistic updates and
   revert on failure.
 
+**Bug fixes**
+
+- ``ModuleSummary`` and ``LoggingCallback`` log their tables after a real line
+  break instead of a literal ``\n``, and ``LoggingCallback`` only colors metric
+  names and values when stdout is a TTY and ``NO_COLOR`` is unset, so log
+  files no longer contain raw ANSI escape codes.
+
 **Dependencies**
 
 - ``torchvision>=0.21`` is now required (previously unbounded).

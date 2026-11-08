@@ -4,10 +4,30 @@ from lightning.pytorch import Callback
 from loguru import logger as logging
 from prettytable import PrettyTable
 import os
+import sys
 
 from ..utils.distributed import rank_zero_only
 from ..data.module import DataModule
 from .utils import log_callbacks_order, log_header
+
+
+def _use_color() -> bool:
+    """Return True if ANSI colors should be used in logged tables.
+
+    Colors are used only when stdout (the default loguru sink) is a TTY and
+    ``NO_COLOR`` is unset or empty (https://no-color.org).
+    """
+    if os.environ.get("NO_COLOR"):
+        return False
+    try:
+        return sys.stdout.isatty()
+    except (AttributeError, ValueError):
+        return False
+
+
+def _colorize(text: str, code: str, use_color: bool) -> str:
+    """Wrap ``text`` in an ANSI color code if ``use_color`` is True."""
+    return f"\033[{code}m{text}\033[0m" if use_color else text
 
 
 class ModuleSummary(pl.Callback):
@@ -68,7 +88,7 @@ class ModuleSummary(pl.Callback):
             table.add_row(
                 [name, num_trainable, num_nontrainable, num_uninitialized, num_buffer]
             )
-        logging.info(f"\\n{table}")
+        logging.info(f"\n{table}")
 
         return super().setup(trainer, pl_module, stage)
 
@@ -78,7 +98,8 @@ class LoggingCallback(pl.Callback):
 
     This callback creates a visually appealing table of all validation metrics
     at the end of each validation epoch. Metrics are color-coded for better
-    readability in terminal outputs.
+    readability in terminal outputs. Colors are only emitted when stdout is a
+    TTY and ``NO_COLOR`` is not set.
 
     Features:
     - Automatic sorting of metrics by name
@@ -91,15 +112,16 @@ class LoggingCallback(pl.Callback):
         metrics = trainer.callback_metrics
         table = PrettyTable()
         table.field_names = ["Metric", "Value"]
+        use_color = _use_color()
         for key in sorted(metrics):
             if key not in ["log", "progress_bar"]:
                 table.add_row(
                     [
-                        "\033[0;34;40m" + key + "\033[0m",
-                        "\033[0;32;40m" + str(metrics[key].item()) + "\033[0m",
+                        _colorize(key, "0;34;40", use_color),
+                        _colorize(str(metrics[key].item()), "0;32;40", use_color),
                     ]
                 )
-        logging.info(f"\\n{table}")
+        logging.info(f"\n{table}")
 
 
 class TrainerInfo(Callback):
