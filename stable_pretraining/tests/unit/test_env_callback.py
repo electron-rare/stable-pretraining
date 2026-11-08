@@ -26,7 +26,10 @@ import torch
 from lightning.pytorch import LightningModule, Trainer
 from torch.utils.data import DataLoader, TensorDataset
 
-pytestmark = pytest.mark.unit
+pytestmark = [
+    pytest.mark.unit,
+    pytest.mark.filterwarnings("ignore::DeprecationWarning"),
+]
 
 from stable_pretraining.callbacks import EnvironmentDumpCallback  # noqa: E402
 
@@ -36,10 +39,6 @@ from stable_pretraining.callbacks import EnvironmentDumpCallback  # noqa: E402
 HAS_GPU = torch.cuda.is_available()
 GPU_COUNT = torch.cuda.device_count() if HAS_GPU else 0
 SKIP_GPU_TESTS = not HAS_GPU
-
-# Markers
-pytestmark = pytest.mark.filterwarnings("ignore::DeprecationWarning")
-
 
 # ==================== Helper Functions ====================
 
